@@ -207,6 +207,8 @@ def cmd_diff(args) -> int:
             "new_regressions": new_regressions,
             "newly_unanswered": unanswered_now,
             "still_open": len(still_open),
+            "unknown_ids_before": sc_before.unknown_ids,
+            "unknown_ids_after": sc_after.unknown_ids,
         }, indent=2))
         return 1 if (broken or new_regressions) else 0
 
@@ -214,6 +216,18 @@ def cmd_diff(args) -> int:
     print(f"  coverage      {sc_before.n_closed}/{sc_before.n_failures} -> "
           f"{sc_after.n_closed}/{sc_after.n_failures}  ({delta:+d})")
     print(f"  verdict       {sc_before.verdict} -> {sc_after.verdict}")
+
+    # Unknown ids are why a diff can look like "no change" when it is really
+    # "these files describe a different benchmark". `score` already warns; a diff
+    # that stayed silent would be the more misleading of the two.
+    for label, score in (("before", sc_before), ("after", sc_after)):
+        if score.unknown_ids:
+            shown = ", ".join(score.unknown_ids[:3])
+            more = (f" (+{len(score.unknown_ids) - 3} more)"
+                    if len(score.unknown_ids) > 3 else "")
+            print(f"\n  WARNING: {len(score.unknown_ids)} id(s) in the {label} file "
+                  f"match no case in this benchmark and were ignored:\n"
+                  f"    {shown}{more}")
 
     if closed:
         print(f"\n  newly closed ({len(closed)}):")

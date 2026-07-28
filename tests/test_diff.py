@@ -125,3 +125,38 @@ def test_malformed_inputs_are_usage_errors(tmp_path, baseline, body):
 
 def test_missing_file_is_a_usage_error(baseline):
     assert run("diff", baseline, "/nonexistent.json").returncode == EXIT_USAGE
+
+
+# ---------------------------------------------------- unknown ids must not be silent
+
+def test_diff_warns_when_the_after_file_has_unknown_ids(tmp_path, baseline):
+    """A submission built against a different benchmark version otherwise reads
+    as 'no change', which is the most misleading answer available."""
+    r = run("diff", baseline, write(tmp_path, {"ghost::x": True, "ghost::y": False}))
+    assert "match no case" in r.stdout
+    assert "ghost::x" in r.stdout
+
+
+def test_diff_warns_when_the_before_file_has_unknown_ids(tmp_path, baseline):
+    r = run("diff", write(tmp_path, {"ghost::x": True}), baseline)
+    assert "match no case" in r.stdout
+
+
+def test_diff_json_carries_unknown_ids(tmp_path, baseline):
+    payload = json.loads(run("--json", "diff", baseline,
+                             write(tmp_path, {"ghost::x": True})).stdout)
+    assert payload["unknown_ids_after"] == ["ghost::x"]
+    assert payload["unknown_ids_before"] == []
+
+
+def test_a_clean_diff_produces_no_warning(baseline):
+    assert "match no case" not in run("diff", baseline, baseline).stdout
+
+
+def test_enormous_submissions_do_not_change_the_denominator(tmp_path, cases, baseline):
+    sub = {c.case_id: bool(c.naive_held) for c in cases}
+    sub.update({f"junk::{i}": True for i in range(50_000)})
+    payload = json.loads(run("--json", "diff", baseline,
+                             write(tmp_path, sub)).stdout)
+    assert payload["delta_closed"] == 0
+    assert len(payload["unknown_ids_after"]) == 50_000

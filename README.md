@@ -4,12 +4,14 @@
 [![data](https://img.shields.io/badge/data-CC--BY--4.0-blue.svg)](DATASET_CARD.md)
 [![cases](https://img.shields.io/badge/cases-322-brightgreen.svg)](src/pqc_mfb/data/pqc_mfb.jsonl)
 [![families](https://img.shields.io/badge/failure%20families-39-brightgreen.svg)](#the-39-families)
-[![tests](https://img.shields.io/badge/tests-110%20passing-brightgreen.svg)](tests/)
+[![tests](https://img.shields.io/badge/tests-117%20passing-brightgreen.svg)](tests/)
 
 **Will your post-quantum migration break? Here are 322 ways it has already broken.**
 
 322 cases across 39 failure families and 10 unrepaired designs. Score your implementation
 in one command. The naive baseline closes **0 of 312**. Post your number.
+
+**📖 Full documentation, tutorial and conceptual guide: <https://nickharris808.github.io/pqc-toolkit/>**
 
 ---
 
@@ -187,7 +189,7 @@ useful signal, not a security certification.
 ## Tests
 
 ```bash
-pip install -e ".[dev]" && pytest       # 110 passed
+pip install -e ".[dev]" && pytest       # 117 passed
 ```
 
 ## Where this comes from

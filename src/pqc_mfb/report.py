@@ -115,11 +115,17 @@ def junit_report(score: Score, suite_name: str = "pqc-mfb") -> str:
     CI systems render this natively, so a benchmark run appears alongside the
     project's own tests rather than buried in log output.
     """
-    n_fail = sum(1 for f in score.by_family.values() if f["closed"] < f["total"])
+    # The counts must describe the document that is actually emitted: one testcase
+    # per family PLUS the verdict case. Declaring only the family count left
+    # tests=38 against 39 <testcase> elements, and a CI parser that trusts the
+    # attribute would silently under-report.
+    n_family_fail = sum(1 for f in score.by_family.values()
+                        if f["closed"] < f["total"])
+    verdict_fails = score.verdict != "PASS"
     suite = ET.Element("testsuite", {
         "name": suite_name,
-        "tests": str(len(score.by_family)),
-        "failures": str(n_fail),
+        "tests": str(len(score.by_family) + 1),
+        "failures": str(n_family_fail + int(verdict_fails)),
         "errors": "0",
         "skipped": "0",
     })

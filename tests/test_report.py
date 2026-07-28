@@ -111,12 +111,16 @@ def test_junit_parses_as_xml(incomplete):
     assert root.get("name") == "pqc-mfb"
 
 
-def test_junit_counts_match_its_own_cases(incomplete):
+def test_junit_declares_one_test_per_family_plus_the_verdict(incomplete):
+    """This assertion previously read `declared == len(family_cases)`, which
+    encoded the bug: the document also contains a `verdict` testcase, so the
+    attribute under-counted by one and the test agreed with it."""
     root = ET.fromstring(junit_report(incomplete).split("?>", 1)[1])
     declared = int(root.get("tests"))
     family_cases = [c for c in root.findall("testcase")
                     if c.get("classname", "").endswith("families")]
-    assert declared == len(family_cases)
+    assert declared == len(family_cases) + 1
+    assert declared == len(root.findall("testcase"))
 
 
 def test_junit_marks_incomplete_as_a_failure(incomplete):
@@ -204,3 +208,46 @@ def test_sarif_validates_against_the_official_schema(request, which):
     except OSError as exc:
         pytest.skip(f"network unavailable: {exc}")
     jsonschema.validate(sarif_report(request.getfixturevalue(which)), schema)
+
+
+# ------------------------------------------- verdict preservation across formats
+
+def test_junit_counts_describe_the_document_it_emits(cases):
+    """tests= and failures= must match the elements actually present.
+
+    They declared only the family count, so tests=38 against 39 <testcase>
+    elements. A CI parser trusting the attribute silently under-reports.
+    """
+    for sub in ({}, perfect_submission(cases)):
+        root = ET.fromstring(junit_report(score_submission(sub, cases))
+                             .split("?>", 1)[1])
+        testcases = root.findall("testcase")
+        failures = [t for t in testcases if t.find("failure") is not None]
+        assert int(root.get("tests")) == len(testcases)
+        assert int(root.get("failures")) == len(failures)
+
+
+def test_every_format_agrees_with_the_verdict_over_random_submissions(cases):
+    """The oracle: no export may disagree with the scorer about pass/fail.
+
+    A format that renders an INCOMPLETE run as green is a confident wrong answer
+    delivered straight into someone's CI dashboard.
+    """
+    import random
+    random.seed(11)
+    for _ in range(150):
+        sub = {c.case_id: random.random() < 0.6
+               for c in cases if random.random() < 0.9}
+        score = score_submission(sub, cases)
+
+        root = ET.fromstring(junit_report(score).split("?>", 1)[1])
+        verdict_case = next(t for t in root.findall("testcase")
+                            if t.get("name") == "verdict")
+        junit_says_pass = verdict_case.find("failure") is None
+
+        sarif_verdicts = [r for r in sarif_report(score)["runs"][0]["results"]
+                          if r["ruleId"] == "pqc-mfb/verdict"]
+        sarif_says_pass = not sarif_verdicts
+
+        assert junit_says_pass == (score.verdict == "PASS"), score.verdict
+        assert sarif_says_pass == (score.verdict == "PASS"), score.verdict

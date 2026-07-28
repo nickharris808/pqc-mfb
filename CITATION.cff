@@ -1,0 +1,19 @@
+cff-version: 1.2.0
+title: "PQC-MFB"
+message: "If you use this software or dataset, please cite it."
+type: dataset
+abstract: >-
+  A Post-Quantum Migration Failure Benchmark: 322 cases across 39 failure families.
+authors:
+  - name: "PQC Migration Safety Lab"
+repository-code: "https://github.com/nickharris808/pqc-mfb"
+url: "https://nickharris808.github.io/pqc-toolkit/"
+license: CC-BY-4.0
+version: "0.2.0"
+date-released: "2026-07-28"
+keywords:
+  - post-quantum cryptography
+  - protocol verification
+  - ML-KEM
+  - ML-DSA
+  - fragmentation
