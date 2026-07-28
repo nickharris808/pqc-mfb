@@ -4,7 +4,7 @@
 [![data](https://img.shields.io/badge/data-CC--BY--4.0-blue.svg)](DATASET_CARD.md)
 [![cases](https://img.shields.io/badge/cases-322-brightgreen.svg)](src/pqc_mfb/data/pqc_mfb.jsonl)
 [![families](https://img.shields.io/badge/failure%20families-39-brightgreen.svg)](#the-39-families)
-[![tests](https://img.shields.io/badge/tests-59%20passing-brightgreen.svg)](tests/)
+[![tests](https://img.shields.io/badge/tests-107%20passing-brightgreen.svg)](tests/)
 
 **Will your post-quantum migration break? Here are 322 ways it has already broken.**
 
@@ -187,7 +187,7 @@ useful signal, not a security certification.
 ## Tests
 
 ```bash
-pip install -e ".[dev]" && pytest       # 59 passed
+pip install -e ".[dev]" && pytest       # 107 passed
 ```
 
 ## Where this comes from
@@ -210,6 +210,7 @@ provisional patent application. For commercial use of the full envelope, open a
 | `pqc-mfb cases [--family F] [--design D] [--failures-only]` | List cases | 0 |
 | `pqc-mfb explain FAMILY` | What breaks in one family, and what each naive design did | 0 / 2 |
 | `pqc-mfb submit [-o FILE] [--fill baseline\|true\|false]` | Write a complete submission template | 0 |
+| `pqc-mfb diff BEFORE AFTER` | What this release closed, and what it broke | 0 / **1** |
 | `pqc-mfb score FILE` | Score a submission | 0 / **1** / **3** |
 | `pqc-mfb score FILE --format sarif\|junit` | Score, as a CI-native report | 0 / **1** / **3** |
 | `pqc-mfb score --baseline naive\|perfect` | Score a built-in reference | 0 |
@@ -219,6 +220,29 @@ provisional patent application. For commercial use of the full envelope, open a
 **Start here:** `pqc-mfb submit -o results.json` writes all 322 case ids seeded
 from the unrepaired baseline, so it scores cleanly before you edit it. Flip a
 case to `true` when your implementation holds that invariant.
+
+### Tracking a release
+
+Coverage alone cannot tell you whether a release helped: two runs at 78% can
+differ in every case. `diff` answers the question directly.
+
+```
+$ pqc-mfb diff examples/baseline.json examples/after-a-sprint.json
+examples/baseline.json -> examples/after-a-sprint.json
+  coverage      0/312 -> 5/312  (+5)
+  verdict       PASS -> FAIL
+
+  newly closed (5):
+    + naive_hybrid_akm::algorithm_substitution   [algorithm_substitution]
+    ...
+
+  NEW CONTROL REGRESSIONS (1) -- cases the unrepaired baseline already held:
+    ! naive_hybrid_akm::fragment_truncate   [fragment_truncate]
+```
+
+It exits **1** if anything regressed, so it gates a release as-is. Cases you
+answered before and omitted now are reported as *newly unanswered* rather than
+silently vanishing.
 
 ### CI-native reports
 

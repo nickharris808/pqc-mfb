@@ -140,6 +140,109 @@ def cmd_explain(args) -> int:
     return 0
 
 
+def _read_submission(path: str):
+    """Read a submission file, or return (None, exit_code)."""
+    try:
+        raw = json.loads(Path(path).read_text())
+    except Exception as exc:
+        print(f"could not read {path}: {exc}", file=sys.stderr)
+        return None, 2
+    if not isinstance(raw, dict):
+        print(f"{path} must be a JSON object of {{case_id: bool}}", file=sys.stderr)
+        return None, 2
+    return {k: bool(v) for k, v in raw.items()}, 0
+
+
+def cmd_diff(args) -> int:
+    """Compare two submissions: what did this release close, and what did it break?
+
+    The question a maintainer asks every sprint, and one the scorer alone cannot
+    answer -- two runs at 78% coverage can differ in every case.
+    """
+    cases = load_cases(args.data)
+    before, rc = _read_submission(args.before)
+    if before is None:
+        return rc
+    after, rc = _read_submission(args.after)
+    if after is None:
+        return rc
+
+    by_id = {c.case_id: c for c in cases}
+    failures = {c.case_id for c in cases if c.is_failure}
+
+    closed, broken, still_open, unanswered_now = [], [], [], []
+    for case_id in sorted(failures):
+        was, now = before.get(case_id), after.get(case_id)
+        if now is None:
+            if was is not None:
+                unanswered_now.append(case_id)
+            continue
+        if now and not was:
+            closed.append(case_id)
+        elif was and not now:
+            broken.append(case_id)
+        elif not now:
+            still_open.append(case_id)
+
+    # A regression on a control is a different, worse event than a failure case
+    # reopening, so it is counted separately.
+    controls = {c.case_id for c in cases if not c.is_failure}
+    new_regressions = sorted(
+        cid for cid in controls
+        if after.get(cid) is False and before.get(cid) is not False)
+
+    sc_before = score_submission(before, cases)
+    sc_after = score_submission(after, cases)
+    delta = sc_after.n_closed - sc_before.n_closed
+
+    if args.json:
+        print(json.dumps({
+            "before": {"file": args.before, "closed": sc_before.n_closed,
+                       "verdict": sc_before.verdict},
+            "after": {"file": args.after, "closed": sc_after.n_closed,
+                      "verdict": sc_after.verdict},
+            "delta_closed": delta,
+            "newly_closed": closed,
+            "newly_broken": broken,
+            "new_regressions": new_regressions,
+            "newly_unanswered": unanswered_now,
+            "still_open": len(still_open),
+        }, indent=2))
+        return 1 if (broken or new_regressions) else 0
+
+    print(f"{args.before} -> {args.after}")
+    print(f"  coverage      {sc_before.n_closed}/{sc_before.n_failures} -> "
+          f"{sc_after.n_closed}/{sc_after.n_failures}  ({delta:+d})")
+    print(f"  verdict       {sc_before.verdict} -> {sc_after.verdict}")
+
+    if closed:
+        print(f"\n  newly closed ({len(closed)}):")
+        for cid in closed[:20]:
+            print(f"    + {cid}   [{by_id[cid].family}]")
+        if len(closed) > 20:
+            print(f"    ... and {len(closed) - 20} more")
+    if broken:
+        print(f"\n  NEWLY BROKEN ({len(broken)}) -- these regressed:")
+        for cid in broken:
+            print(f"    - {cid}   [{by_id[cid].family}]")
+    if new_regressions:
+        print(f"\n  NEW CONTROL REGRESSIONS ({len(new_regressions)}) -- "
+              f"cases the unrepaired baseline already held:")
+        for cid in new_regressions:
+            print(f"    ! {cid}   [{by_id[cid].family}]")
+    if unanswered_now:
+        print(f"\n  newly unanswered ({len(unanswered_now)}) -- previously answered, "
+              f"now omitted:")
+        for cid in unanswered_now[:10]:
+            print(f"    ? {cid}")
+        if len(unanswered_now) > 10:
+            print(f"    ... and {len(unanswered_now) - 10} more")
+
+    if not (closed or broken or new_regressions or unanswered_now):
+        print("\n  no change")
+    return 1 if (broken or new_regressions) else 0
+
+
 def cmd_score(args) -> int:
     cases = load_cases(args.data)
     if args.baseline == "naive":
@@ -226,6 +329,11 @@ def build_parser() -> argparse.ArgumentParser:
                    help="starting values (default: baseline -- 0%% coverage, "
                         "0 regressions)")
     t.set_defaults(func=cmd_submit)
+
+    df = sub.add_parser("diff", help="compare two submissions")
+    df.add_argument("before")
+    df.add_argument("after")
+    df.set_defaults(func=cmd_diff)
 
     e = sub.add_parser("explain", help="describe one failure family")
     e.add_argument("family")
