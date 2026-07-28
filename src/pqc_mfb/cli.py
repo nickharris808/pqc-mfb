@@ -10,6 +10,11 @@ from pathlib import Path
 
 from .score import load_cases, naive_baseline, perfect_submission, score_submission
 
+#: Exit codes. INCOMPLETE is deliberately distinct from FAIL: a CI gate should be able
+#: to tell "you broke something" apart from "you did not show your work", and neither
+#: may be mistaken for success.
+EXIT_FOR_VERDICT = {"PASS": 0, "FAIL": 1, "INCOMPLETE": 3}
+
 
 def cmd_info(args) -> int:
     cases = load_cases(args.data)
@@ -78,15 +83,23 @@ def cmd_score(args) -> int:
     sc = score_submission(submission, cases)
     if args.json:
         print(json.dumps(sc.to_dict(), indent=2))
-        return 0 if sc.passed else 1
+        return EXIT_FOR_VERDICT[sc.verdict]
 
     print(f"submission: {label}")
     print(f"  coverage      {sc.n_closed}/{sc.n_failures}  ({100*sc.coverage:.1f}%)")
     print(f"  regressions   {sc.n_regressions}" +
           ("   <-- HARD FAIL" if sc.n_regressions else ""))
-    print(f"  unanswered    {sc.n_unanswered}")
+    print(f"  unanswered    {sc.n_unanswered}" +
+          ("   <-- no pass can be claimed" if sc.n_unanswered else ""))
+    if sc.unknown_ids:
+        shown = ", ".join(sc.unknown_ids[:3])
+        more = f" (+{len(sc.unknown_ids) - 3} more)" if len(sc.unknown_ids) > 3 else ""
+        print(f"\n  WARNING: {len(sc.unknown_ids)} submitted id(s) match no case in "
+              f"this benchmark and were ignored:\n    {shown}{more}")
+        print("  Check you built the submission against this version "
+              "(`pqc-mfb info`).")
     if sc.zero_families:
-        print(f"\n  families closed 0 of ({len(sc.zero_families)}):")
+        print(f"\n  zero-coverage families ({len(sc.zero_families)}):")
         for f in sc.zero_families:
             print(f"    - {f}")
     if args.verbose:
@@ -94,8 +107,9 @@ def cmd_score(args) -> int:
         print("  " + "-" * 50)
         for fam, st in sc.by_family.items():
             print(f"  {fam:<38} {st['closed']:>3}/{st['total']:<3} ({st['pct']:>5.1f}%)")
-    print(f"\n  result: {'PASS' if sc.passed else 'FAIL (regressions present)'}")
-    return 0 if sc.passed else 1
+    print(f"\n  result: {sc.verdict}")
+    print(f"  reason: {sc.verdict_reason}")
+    return EXIT_FOR_VERDICT[sc.verdict]
 
 
 def build_parser() -> argparse.ArgumentParser:

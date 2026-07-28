@@ -12,6 +12,18 @@ either HELD the invariant (closed it) or did not. Score = closed / failures.
 Cases the naive baseline already passes are NOT counted toward your score. They are
 reported separately as a regression check: if you fail one of those, you have broken
 something that worked before, and that is a hard failure regardless of your score.
+
+Verdicts
+--------
+``PASS``        every failure case answered, nothing regressed.
+``FAIL``        at least one regression -- a hard fail whatever the coverage.
+``INCOMPLETE``  at least one case left unanswered, so no pass can be claimed.
+
+The third verdict exists because the second one was wrong. Until it was added, a
+submission of ``{}`` -- answering nothing at all -- scored ``PASS`` with 0% coverage
+and 312 unanswered cases, because ``passed`` only consulted the regression count. A
+vendor could have submitted an empty file and truthfully reported a passing PQC-MFB
+run. Silence is not credit, so silence is now INCOMPLETE.
 """
 
 from __future__ import annotations
@@ -65,15 +77,44 @@ class Score:
     by_family: dict = field(default_factory=dict)
     by_design: dict = field(default_factory=dict)
     zero_families: list = field(default_factory=list)
+    unknown_ids: list = field(default_factory=list)
 
     @property
     def coverage(self) -> float:
         return self.n_closed / self.n_failures if self.n_failures else 0.0
 
     @property
+    def verdict(self) -> str:
+        """PASS, FAIL or INCOMPLETE -- never a pass for work not shown.
+
+        A regression outranks incompleteness: breaking something that already
+        worked is a definite finding, whereas an unanswered case is an absence of
+        one.
+        """
+        if self.n_regressions:
+            return "FAIL"
+        if self.n_unanswered:
+            return "INCOMPLETE"
+        return "PASS"
+
+    @property
     def passed(self) -> bool:
-        """A submission with any regression does not pass, whatever its coverage."""
-        return self.n_regressions == 0
+        """True only for an outright PASS.
+
+        Deliberately NOT ``n_regressions == 0``: that let an empty submission pass.
+        """
+        return self.verdict == "PASS"
+
+    @property
+    def verdict_reason(self) -> str:
+        if self.n_regressions:
+            return (f"{self.n_regressions} regression"
+                    f"{'s' if self.n_regressions != 1 else ''}: a case the unrepaired "
+                    f"baseline already held is now broken")
+        if self.n_unanswered:
+            return (f"{self.n_unanswered} of {self.n_failures} failure cases "
+                    f"unanswered -- silence is not credit, so no pass is claimed")
+        return f"all {self.n_failures} failure cases answered, no regressions"
 
     def to_dict(self) -> dict:
         return {
@@ -84,8 +125,11 @@ class Score:
             "n_unanswered": self.n_unanswered,
             "coverage": round(self.coverage, 4),
             "coverage_pct": round(100 * self.coverage, 2),
+            "verdict": self.verdict,
+            "verdict_reason": self.verdict_reason,
             "passed": self.passed,
             "zero_families": self.zero_families,
+            "unknown_ids": self.unknown_ids,
             "by_family": self.by_family,
             "by_design": self.by_design,
         }
@@ -135,10 +179,17 @@ def score_submission(submission: dict[str, bool], cases: list[Case] | None = Non
     }
     zero = [f for f in sorted(fam_tot) if fam_closed[f] == 0]
 
+    # Keys that match no case in the benchmark. A submission built against a stale
+    # copy, or with a typo'd id, otherwise looks identical to one that answered
+    # nothing -- both score 0 in silence. Name them instead.
+    known = {c.case_id for c in cases}
+    unknown = sorted(k for k in submission if k not in known)
+
     return Score(
         n_cases=len(cases), n_failures=n_failures, n_closed=n_closed,
         n_regressions=n_regressions, n_unanswered=n_unanswered,
         by_family=by_family, by_design=by_design, zero_families=zero,
+        unknown_ids=unknown,
     )
 
 
