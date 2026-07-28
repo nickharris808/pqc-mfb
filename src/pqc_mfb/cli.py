@@ -161,6 +161,17 @@ def cmd_score(args) -> int:
         label = args.submission
 
     sc = score_submission(submission, cases)
+
+    if getattr(args, "format", None) in ("sarif", "junit"):
+        from .report import write_report
+        text = write_report(sc, args.format, args.output,
+                            submission_path=args.submission or "pqc-mfb-submission.json")
+        if args.output:
+            print(f"wrote {args.format} report to {args.output}")
+        else:
+            print(text)
+        return EXIT_FOR_VERDICT[sc.verdict]
+
     if args.json:
         print(json.dumps(sc.to_dict(), indent=2))
         return EXIT_FOR_VERDICT[sc.verdict]
@@ -225,6 +236,9 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--baseline", choices=["naive", "perfect"],
                    help="score a built-in reference instead of a file")
     s.add_argument("-v", "--verbose", action="store_true")
+    s.add_argument("--format", choices=["text", "sarif", "junit"], default="text",
+                   help="sarif for GitHub code scanning, junit for CI test panes")
+    s.add_argument("-o", "--output", help="write the report to a file")
     s.set_defaults(func=cmd_score)
     return p
 

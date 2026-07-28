@@ -37,7 +37,7 @@ package-dir = { "" = "src" }
 where = ["src"]
 
 [tool.setuptools.package-data]
-pqc_mfb = ["data/*.jsonl", "data/*.json"]
+pqc_mfb = ["py.typed", "data/*.jsonl", "data/*.json"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

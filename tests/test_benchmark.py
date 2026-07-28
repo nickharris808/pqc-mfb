@@ -178,10 +178,25 @@ def test_dataset_lives_inside_the_package():
 
 
 def test_package_data_is_declared_for_the_wheel():
-    """pyproject must tell setuptools to include the data, or the wheel is empty."""
+    """pyproject must tell setuptools to include the data, or the wheel is empty.
+
+    Asserts the required globs are present rather than matching the declaration
+    byte-for-byte: adding an unrelated entry such as ``py.typed`` must not fail a
+    test whose subject is the data files.
+    """
     text = (ROOT / "pyproject.toml").read_text()
     assert "[tool.setuptools.package-data]" in text
-    assert 'pqc_mfb = ["data/*.jsonl", "data/*.json"]' in text
+    declaration = next(ln for ln in text.splitlines() if ln.startswith("pqc_mfb = ["))
+    for glob in ('"data/*.jsonl"', '"data/*.json"'):
+        assert glob in declaration, f"{glob} missing from package-data"
+
+
+def test_py_typed_marker_ships():
+    """PEP 561: without this file, type checkers ignore the package's annotations."""
+    text = (ROOT / "pyproject.toml").read_text()
+    declaration = next(ln for ln in text.splitlines() if ln.startswith("pqc_mfb = ["))
+    assert '"py.typed"' in declaration
+    assert (ROOT / "src" / "pqc_mfb" / "py.typed").exists()
 
 
 def test_load_cases_works_without_a_cwd_dependency(tmp_path, monkeypatch):

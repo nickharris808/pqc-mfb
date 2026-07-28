@@ -211,6 +211,7 @@ provisional patent application. For commercial use of the full envelope, open a
 | `pqc-mfb explain FAMILY` | What breaks in one family, and what each naive design did | 0 / 2 |
 | `pqc-mfb submit [-o FILE] [--fill baseline\|true\|false]` | Write a complete submission template | 0 |
 | `pqc-mfb score FILE` | Score a submission | 0 / **1** / **3** |
+| `pqc-mfb score FILE --format sarif\|junit` | Score, as a CI-native report | 0 / **1** / **3** |
 | `pqc-mfb score --baseline naive\|perfect` | Score a built-in reference | 0 |
 
 `--json` is global: `pqc-mfb --json score results.json`.
@@ -218,6 +219,20 @@ provisional patent application. For commercial use of the full envelope, open a
 **Start here:** `pqc-mfb submit -o results.json` writes all 322 case ids seeded
 from the unrepaired baseline, so it scores cleanly before you edit it. Flip a
 case to `true` when your implementation holds that invariant.
+
+### CI-native reports
+
+`--format sarif` puts zero-coverage families in the GitHub Security tab;
+`--format junit` puts per-family results in any CI's test pane. Both are emitted
+from the same `Score` the text output uses, so they cannot disagree with it.
+
+Neither format can natively express "I could not tell", so an `INCOMPLETE`
+submission is reported as a **failure** in both — never as a pass.
+
+```bash
+pqc-mfb score results.json --format sarif -o pqc-mfb.sarif
+pqc-mfb score results.json --format junit -o pqc-mfb.xml
+```
 
 ## Troubleshooting
 

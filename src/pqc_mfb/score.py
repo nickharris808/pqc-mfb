@@ -31,6 +31,7 @@ from __future__ import annotations
 import json
 from collections import defaultdict
 from dataclasses import dataclass, field
+from functools import lru_cache
 from pathlib import Path
 
 DATA = Path(__file__).resolve().parent / "data" / "pqc_mfb.jsonl"
@@ -48,14 +49,16 @@ class Case:
     prior_art_analogue: str = ""
 
 
-def load_cases(path: Path | None = None) -> list[Case]:
-    src = path or DATA
-    if not src.exists():
-        raise FileNotFoundError(
-            f"dataset not found at {src}. Build it with "
-            f"`python -m pqc_mfb.build_dataset <manifest.json> "
-            f"src/pqc_mfb/data/pqc_mfb.jsonl`."
-        )
+@lru_cache(maxsize=4)
+def _parse(src: Path, _mtime: float, _size: int) -> tuple[Case, ...]:
+    """Parse and cache one dataset file.
+
+    Keyed on (path, mtime, size), not path alone. A cache keyed only on the path
+    would serve a stale corpus after `build_dataset` regenerates the file -- the
+    scorer would then report confident numbers for data that no longer exists on
+    disk, which is exactly the failure class this project has already paid to fix
+    once. The mtime/size pair makes a regeneration a cache miss.
+    """
     cases: list[Case] = []
     for line in src.read_text(encoding="utf-8").splitlines():
         line = line.strip()
@@ -64,7 +67,92 @@ def load_cases(path: Path | None = None) -> list[Case]:
         raw = json.loads(line)
         cases.append(Case(**{k: raw.get(k, Case.__dataclass_fields__[k].default)
                              for k in Case.__dataclass_fields__}))
-    return cases
+    return tuple(cases)
+
+
+def load_cases(path: str | Path | None = None) -> list[Case]:
+    """Load the benchmark. Repeat calls for an unchanged file are served from cache.
+
+    Accepts a ``str`` as well as a ``Path``: passing a string previously raised
+    ``AttributeError: 'str' object has no attribute 'exists'`` from the innards
+    rather than working or explaining itself.
+
+    Returns a fresh ``list`` each call, so a caller that mutates the result cannot
+    corrupt the cached copy for everyone else. The copy costs ~0.3 microseconds
+    against a ~900 microsecond parse.
+    """
+    src = Path(path) if path is not None else DATA
+    if not src.exists():
+        raise FileNotFoundError(
+            f"dataset not found at {src}. Build it with "
+            f"`python -m pqc_mfb.build_dataset <manifest.json> "
+            f"src/pqc_mfb/data/pqc_mfb.jsonl`."
+        )
+    stat = src.stat()
+    return list(_parse(src, stat.st_mtime, stat.st_size))
+
+
+@dataclass(frozen=True)
+class Family:
+    """One failure family, summarised across the corpus."""
+    name: str
+    n_cases: int
+    n_failures: int
+    invariants: tuple[str, ...]
+    designs: tuple[str, ...]
+    prior_art_analogues: tuple[str, ...]
+
+    @property
+    def is_control_only(self) -> bool:
+        """True when the unrepaired baseline already holds every case here.
+
+        Such a family can never be *zero*-covered, which is why the scorer reports
+        38 zero-coverage families against 39 total.
+        """
+        return self.n_failures == 0
+
+
+def _build_taxonomy(cases: tuple[Case, ...]) -> tuple[Family, ...]:
+    acc: dict[str, dict] = {}
+    for c in cases:
+        f = acc.setdefault(c.family, {"n_cases": 0, "n_failures": 0, "invariants": set(),
+                                      "designs": set(), "analogues": set()})
+        f["n_cases"] += 1
+        f["n_failures"] += bool(c.is_failure)
+        f["invariants"].add(c.invariant)
+        f["designs"].add(c.design)
+        if c.prior_art_analogue:
+            f["analogues"].add(c.prior_art_analogue)
+    return tuple(
+        Family(name=k, n_cases=v["n_cases"], n_failures=v["n_failures"],
+               invariants=tuple(sorted(v["invariants"])),
+               designs=tuple(sorted(v["designs"])),
+               prior_art_analogues=tuple(sorted(v["analogues"])))
+        for k, v in sorted(acc.items())
+    )
+
+
+@lru_cache(maxsize=4)
+def _taxonomy_for_file(src: Path, _mtime: float, _size: int) -> tuple[Family, ...]:
+    return _build_taxonomy(_parse(src, _mtime, _size))
+
+
+def families(cases: list[Case] | None = None) -> list[Family]:
+    """The failure taxonomy, derived from the corpus.
+
+    Every consumer -- the CLI, the MCP server, the report emitters -- was deriving
+    this independently on each call. It is a pure function of the corpus.
+
+    Cached on the *file* identity, not on the case list. Keying an ``lru_cache`` on
+    a tuple of 322 frozen dataclasses means hashing all eight fields of all 322 on
+    every lookup, which measured as costly as recomputing the taxonomy outright --
+    the cache paid for itself and no more. Keying on (path, mtime, size) makes the
+    default call a dictionary hit.
+    """
+    if cases is None:
+        stat = DATA.stat()
+        return list(_taxonomy_for_file(DATA, stat.st_mtime, stat.st_size))
+    return list(_build_taxonomy(tuple(cases)))
 
 
 @dataclass
