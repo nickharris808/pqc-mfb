@@ -1,0 +1,255 @@
+{
+  "n_cases": 322,
+  "n_failures": 312,
+  "n_closed": 312,
+  "n_regressions": 0,
+  "n_unanswered": 0,
+  "coverage": 1.0,
+  "coverage_pct": 100.0,
+  "passed": true,
+  "zero_families": [],
+  "by_family": {
+    "algorithm_substitution": {
+      "total": 10,
+      "closed": 10,
+      "pct": 100.0
+    },
+    "ap_flood": {
+      "total": 10,
+      "closed": 10,
+      "pct": 100.0
+    },
+    "beacon_batch_replay": {
+      "total": 10,
+      "closed": 10,
+      "pct": 100.0
+    },
+    "beacon_forgery": {
+      "total": 10,
+      "closed": 10,
+      "pct": 100.0
+    },
+    "capability_spoof": {
+      "total": 10,
+      "closed": 10,
+      "pct": 100.0
+    },
+    "combiner_downgrade": {
+      "total": 10,
+      "closed": 10,
+      "pct": 100.0
+    },
+    "compression_bomb": {
+      "total": 10,
+      "closed": 10,
+      "pct": 100.0
+    },
+    "cross_protocol_confusion": {
+      "total": 10,
+      "closed": 10,
+      "pct": 100.0
+    },
+    "eap_method_downgrade": {
+      "total": 1,
+      "closed": 1,
+      "pct": 100.0
+    },
+    "eap_pqc_strip": {
+      "total": 10,
+      "closed": 10,
+      "pct": 100.0
+    },
+    "fec_downgrade": {
+      "total": 10,
+      "closed": 10,
+      "pct": 100.0
+    },
+    "flood_starvation": {
+      "total": 10,
+      "closed": 10,
+      "pct": 100.0
+    },
+    "forced_fallback": {
+      "total": 10,
+      "closed": 10,
+      "pct": 100.0
+    },
+    "fragment_splice": {
+      "total": 10,
+      "closed": 10,
+      "pct": 100.0
+    },
+    "fragment_swap": {
+      "total": 10,
+      "closed": 10,
+      "pct": 100.0
+    },
+    "ft_roam_fs_erosion": {
+      "total": 10,
+      "closed": 10,
+      "pct": 100.0
+    },
+    "group_key_injection": {
+      "total": 10,
+      "closed": 10,
+      "pct": 100.0
+    },
+    "kem_impersonation_no_confirm": {
+      "total": 10,
+      "closed": 10,
+      "pct": 100.0
+    },
+    "krack_retransmission": {
+      "total": 10,
+      "closed": 10,
+      "pct": 100.0
+    },
+    "length_fingerprint": {
+      "total": 10,
+      "closed": 10,
+      "pct": 100.0
+    },
+    "mlo_key_crosslink": {
+      "total": 3,
+      "closed": 3,
+      "pct": 100.0
+    },
+    "mlo_misbind": {
+      "total": 3,
+      "closed": 3,
+      "pct": 100.0
+    },
+    "mtu_downgrade": {
+      "total": 10,
+      "closed": 10,
+      "pct": 100.0
+    },
+    "offline_dictionary": {
+      "total": 1,
+      "closed": 1,
+      "pct": 100.0
+    },
+    "online_guess": {
+      "total": 1,
+      "closed": 1,
+      "pct": 100.0
+    },
+    "owe_quantum_recoverable": {
+      "total": 10,
+      "closed": 10,
+      "pct": 100.0
+    },
+    "policy_substitution": {
+      "total": 10,
+      "closed": 10,
+      "pct": 100.0
+    },
+    "puzzle_replay": {
+      "total": 1,
+      "closed": 1,
+      "pct": 100.0
+    },
+    "recovery_downgrade": {
+      "total": 10,
+      "closed": 10,
+      "pct": 100.0
+    },
+    "resumption_replay": {
+      "total": 10,
+      "closed": 10,
+      "pct": 100.0
+    },
+    "roam_key_reuse": {
+      "total": 10,
+      "closed": 10,
+      "pct": 100.0
+    },
+    "roam_ticket_replay": {
+      "total": 1,
+      "closed": 1,
+      "pct": 100.0
+    },
+    "sae_role_confusion": {
+      "total": 1,
+      "closed": 1,
+      "pct": 100.0
+    },
+    "sig_profile_substitution": {
+      "total": 10,
+      "closed": 10,
+      "pct": 100.0
+    },
+    "single_family_break": {
+      "total": 10,
+      "closed": 10,
+      "pct": 100.0
+    },
+    "skipped_reencryption_check": {
+      "total": 10,
+      "closed": 10,
+      "pct": 100.0
+    },
+    "stale_credential_replay": {
+      "total": 10,
+      "closed": 10,
+      "pct": 100.0
+    },
+    "suite_rollback": {
+      "total": 10,
+      "closed": 10,
+      "pct": 100.0
+    }
+  },
+  "by_design": {
+    "naive_hybrid_akm": {
+      "total": 32,
+      "closed": 32,
+      "pct": 100.0
+    },
+    "naive_pqc_eaptls": {
+      "total": 31,
+      "closed": 31,
+      "pct": 100.0
+    },
+    "naive_pqc_fast_roam": {
+      "total": 31,
+      "closed": 31,
+      "pct": 100.0
+    },
+    "naive_pqc_fils": {
+      "total": 30,
+      "closed": 30,
+      "pct": 100.0
+    },
+    "naive_pqc_fragmentation": {
+      "total": 32,
+      "closed": 32,
+      "pct": 100.0
+    },
+    "naive_pqc_mlo": {
+      "total": 32,
+      "closed": 32,
+      "pct": 100.0
+    },
+    "naive_pqc_owe": {
+      "total": 30,
+      "closed": 30,
+      "pct": 100.0
+    },
+    "naive_pqc_pake": {
+      "total": 33,
+      "closed": 33,
+      "pct": 100.0
+    },
+    "naive_pqc_pasn": {
+      "total": 31,
+      "closed": 31,
+      "pct": 100.0
+    },
+    "naive_pqc_sae": {
+      "total": 30,
+      "closed": 30,
+      "pct": 100.0
+    }
+  }
+}
