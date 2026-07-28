@@ -291,3 +291,24 @@ def perfect_submission(cases: list[Case] | None = None) -> dict[str, bool]:
     """The ceiling: closes every failure and regresses nothing."""
     cases = cases if cases is not None else load_cases()
     return {c.case_id: True for c in cases}
+
+
+def to_dataframe(cases: list[Case] | None = None):
+    """Return the corpus as a pandas DataFrame.
+
+    pandas is NOT a dependency of this package -- the import is local and the
+    error names the fix, so a zero-dependency install stays zero-dependency.
+    """
+    try:
+        import pandas
+    except ImportError as exc:  # pragma: no cover - exercised via the CLI path
+        raise ImportError(
+            "to_dataframe() needs pandas: pip install pandas"
+        ) from exc
+    rows = cases if cases is not None else load_cases()
+    return pandas.DataFrame([{
+        "case_id": c.case_id, "design": c.design, "family": c.family,
+        "invariant": c.invariant, "is_failure": c.is_failure,
+        "naive_detail": c.naive_detail, "naive_held": c.naive_held,
+        "prior_art_analogue": c.prior_art_analogue,
+    } for c in rows])

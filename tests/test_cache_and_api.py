@@ -135,3 +135,28 @@ def test_case_is_immutable():
     with pytest.raises(dataclasses.FrozenInstanceError):
         case.family = "mutated"  # type: ignore[misc]
     assert isinstance(case, Case)
+
+
+# ------------------------------------------------------------------ DataFrame API
+
+def test_to_dataframe_shape_and_columns():
+    pandas = pytest.importorskip("pandas")
+    df = pqc_mfb.to_dataframe()
+    assert df.shape == (322, 8)
+    assert set(df.columns) == {"case_id", "design", "family", "invariant",
+                               "is_failure", "naive_detail", "naive_held",
+                               "prior_art_analogue"}
+    assert isinstance(df, pandas.DataFrame)
+
+
+def test_to_dataframe_agrees_with_the_corpus():
+    pytest.importorskip("pandas")
+    df = pqc_mfb.to_dataframe()
+    assert int(df["is_failure"].sum()) == 312
+    assert df["family"].nunique() == 39
+
+
+def test_to_dataframe_accepts_an_explicit_corpus():
+    pytest.importorskip("pandas")
+    subset = [c for c in load_cases() if c.family == "krack_retransmission"]
+    assert len(pqc_mfb.to_dataframe(subset)) == len(subset)

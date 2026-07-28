@@ -23,6 +23,7 @@ from .score import (
     naive_baseline,
     perfect_submission,
     score_submission,
+    to_dataframe,
 )
 
 __version__ = "0.2.0"
@@ -38,4 +39,5 @@ __all__ = [
     "perfect_submission",
     "sarif_report",
     "score_submission",
+    "to_dataframe",
 ]
