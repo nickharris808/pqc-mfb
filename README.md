@@ -4,7 +4,7 @@
 [![data](https://img.shields.io/badge/data-CC--BY--4.0-blue.svg)](DATASET_CARD.md)
 [![cases](https://img.shields.io/badge/cases-322-brightgreen.svg)](src/pqc_mfb/data/pqc_mfb.jsonl)
 [![families](https://img.shields.io/badge/failure%20families-39-brightgreen.svg)](#the-39-families)
-[![tests](https://img.shields.io/badge/tests-44%20passing-brightgreen.svg)](tests/)
+[![tests](https://img.shields.io/badge/tests-59%20passing-brightgreen.svg)](tests/)
 
 **Will your post-quantum migration break? Here are 322 ways it has already broken.**
 
@@ -29,9 +29,11 @@ There was no shared way to ask "does my implementation handle these?" This is on
 ## Install
 
 ```bash
-pip install pqc-mfb              # once published
-pip install -e .                 # from a clone, today
+pip install git+https://github.com/nickharris808/pqc-mfb
 ```
+
+Zero runtime dependencies. Not on PyPI yet, so `pip install pqc-mfb` does not
+work today — the command above does.
 
 ## 30-second quickstart
 
@@ -185,7 +187,7 @@ useful signal, not a security certification.
 ## Tests
 
 ```bash
-pip install -e ".[dev]" && pytest       # 44 passed
+pip install -e ".[dev]" && pytest       # 59 passed
 ```
 
 ## Where this comes from
@@ -199,6 +201,69 @@ hardware), [`farkas-check`](https://github.com/nickharris808/farkas-check) (on-d
 them.** That is what the closed core does. Relevant subject matter is covered by a filed
 provisional patent application. For commercial use of the full envelope, open a
 [GitHub Discussion](https://github.com/nickharris808) or an issue on this repository.
+
+## CLI reference
+
+| Command | What it does | Exit |
+|---|---|---|
+| `pqc-mfb info` | Case, failure, family and design counts | 0 |
+| `pqc-mfb cases [--family F] [--design D] [--failures-only]` | List cases | 0 |
+| `pqc-mfb explain FAMILY` | What breaks in one family, and what each naive design did | 0 / 2 |
+| `pqc-mfb submit [-o FILE] [--fill baseline\|true\|false]` | Write a complete submission template | 0 |
+| `pqc-mfb score FILE` | Score a submission | 0 / **1** / **3** |
+| `pqc-mfb score --baseline naive\|perfect` | Score a built-in reference | 0 |
+
+`--json` is global: `pqc-mfb --json score results.json`.
+
+**Start here:** `pqc-mfb submit -o results.json` writes all 322 case ids seeded
+from the unrepaired baseline, so it scores cleanly before you edit it. Flip a
+case to `true` when your implementation holds that invariant.
+
+## Troubleshooting
+
+**`INCOMPLETE` (exit 3).** You left cases unanswered. Silence is not credit, so
+no pass is claimed. `pqc-mfb submit` writes every id for you.
+
+**`FAIL` with high coverage.** You regressed a control — a case the unrepaired
+baseline already handled. That is a hard fail regardless of coverage, and the
+scorer names the count. Regressions outrank incompleteness.
+
+**`WARNING: N submitted id(s) match no case`.** Your submission targets a
+different benchmark version, or an id is mistyped. Regenerate with
+`pqc-mfb submit`. Unknown ids are ignored in scoring, so without this warning a
+typo would look identical to an honest zero.
+
+**The naive baseline scores `PASS`.** Intended. `PASS` is the regression gate,
+not the score: the baseline answers every case honestly and breaks nothing. Its
+coverage is 0%. Gate on coverage with `--min-coverage` in
+[`pqc-guard-action`](https://github.com/nickharris808/pqc-guard-action).
+
+**`zero-coverage families (38)` but you advertise 39.** One family
+(`fragment_truncate`) is held even unrepaired, so it contributes controls rather
+than failures and can never be zero-covered.
+
+## Honest scope
+
+**What this proves.** That your implementation held, or did not hold, each named
+invariant across 322 cases executed against a modelled protocol state machine.
+
+**What it does NOT prove.**
+
+- **Not a security certification.** 312/312 means you handled 312 *modelled*
+  cases. It is a signal, not an assurance.
+- **Not a vulnerability disclosure.** `prior_art_analogue` names a published
+  failure of similar *shape*. It is not a claim that the case reproduces that
+  CVE, and it asserts nothing about any vendor's product.
+- **Not exhaustive.** The 39 families are what this effort modelled. A failure
+  mode the model cannot express is absent, and absence here means nothing.
+- **Not derived from traffic.** No packet captures, no shipping firmware. The 10
+  unrepaired designs are constructed baselines.
+- **Not a repair.** The benchmark tells you which families you fail, never how to
+  close them.
+
+**Verdicts.** `PASS` (0) · `FAIL` (1, a regression) · `INCOMPLETE` (3, something
+unanswered). `PASS` is the regression gate, not the score — the unrepaired
+baseline passes at 0% coverage. Coverage is the number you report.
 
 ---
 
@@ -219,7 +284,9 @@ Nine free tools for teams moving authenticated key exchange to post-quantum. The
 | [pqc-formal-corpus](https://huggingface.co/datasets/nickh007/pqc-formal-corpus) | 122 named formal results, 6 provers | HF |
 | [pqc-explorer](https://huggingface.co/spaces/nickh007/pqc-explorer) | Try it in your browser, no install | HF Space |
 
-**Start here:** [`pqc-sizes`](https://github.com/nickharris808/pqc-sizes) tells you in five seconds whether your credential fragments and whether a safe cap exists. [`pqc-explorer`](https://huggingface.co/spaces/nickh007/pqc-explorer) does the same in a browser.
+**New here?** The [end-to-end tutorial](https://github.com/nickharris808/pqc-sizes/blob/main/TUTORIAL.md) walks one realistic migration through all of them in about ten minutes: sizes -> window -> CI gate -> benchmark.
+
+**In a hurry?** [`pqc-sizes`](https://github.com/nickharris808/pqc-sizes) tells you in five seconds whether your credential fragments and whether a safe cap exists. [`pqc-explorer`](https://huggingface.co/spaces/nickh007/pqc-explorer) does the same in a browser, with no install.
 
 ### The closed core
 

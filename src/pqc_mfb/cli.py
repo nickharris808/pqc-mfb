@@ -60,6 +60,86 @@ def cmd_cases(args) -> int:
     return 0
 
 
+def cmd_submit(args) -> int:
+    """Emit a complete submission template, every case id pre-filled.
+
+    Hand-writing 322 case ids is the biggest barrier to a first score, and a
+    mistyped id is invisible -- it scores as unanswered rather than erroring.
+
+    The default fill is the unrepaired baseline, NOT all-false. Filling every
+    case false marks the 10 control cases as broken, so the scaffold would score
+    FAIL with 10 regressions before its owner had changed anything -- a scaffold
+    that starts red teaches nothing. Seeding from the baseline starts at the
+    documented floor: 0% coverage, 0 regressions, PASS.
+    """
+    cases = load_cases(args.data)
+    if args.fill == "baseline":
+        template = {c.case_id: bool(c.naive_held) for c in cases}
+        note = ("seeded from the unrepaired baseline: 0% coverage, no regressions. "
+                "Flip a case to true when your implementation holds that invariant.")
+    elif args.fill == "true":
+        template = {c.case_id: True for c in cases}
+        note = "every case true -- this is the reference ceiling, not a result."
+    else:
+        template = {c.case_id: False for c in cases}
+        note = ("every case false -- note this marks the 10 control cases as broken, "
+                "so it scores FAIL with 10 regressions.")
+
+    body = json.dumps(template, indent=2, sort_keys=True)
+    if args.output:
+        Path(args.output).write_text(body + "\n", encoding="utf-8")
+        print(f"wrote {len(template)} case ids to {args.output}")
+        print(f"  {note}")
+        print(f"  then: pqc-mfb score {args.output}")
+    else:
+        print(body)
+    return 0
+
+
+def cmd_explain(args) -> int:
+    """Describe one failure family: what breaks, where, and what the naive design did."""
+    cases = load_cases(args.data)
+    known = sorted({c.family for c in cases})
+    if args.family not in known:
+        near = [f for f in known if args.family in f or f.startswith(args.family[:4])]
+        print(f"unknown family {args.family!r}", file=sys.stderr)
+        if near:
+            print(f"  did you mean: {', '.join(near[:5])}", file=sys.stderr)
+        else:
+            print(f"  see `pqc-mfb info` for all {len(known)} families", file=sys.stderr)
+        return 2
+
+    hits = [c for c in cases if c.family == args.family]
+    if args.json:
+        print(json.dumps({
+            "family": args.family,
+            "n_cases": len(hits),
+            "n_failures": sum(1 for c in hits if c.is_failure),
+            "invariants": sorted({c.invariant for c in hits}),
+            "designs": sorted({c.design for c in hits}),
+            "prior_art_analogue": next(
+                (c.prior_art_analogue for c in hits if c.prior_art_analogue), None),
+            "cases": [c.__dict__ for c in hits],
+        }, indent=2))
+        return 0
+
+    failures = sum(1 for c in hits if c.is_failure)
+    print(f"{args.family}")
+    print(f"  cases        {len(hits)}  ({failures} where the unrepaired baseline fails)")
+    print(f"  invariants   {', '.join(sorted({c.invariant for c in hits}))}")
+    print(f"  designs      {len({c.design for c in hits})}")
+    analogue = next((c.prior_art_analogue for c in hits if c.prior_art_analogue), None)
+    if analogue:
+        print(f"  analogue     {analogue}  (similar in shape; not a reproduction)")
+    print("\n  what the unrepaired designs did:")
+    for c in hits:
+        if c.naive_detail:
+            print(f"    [{'FAIL' if c.is_failure else 'ok  '}] {c.design}: {c.naive_detail}")
+    print("\n  The repair for this family is not part of this benchmark. See the "
+          "README\n  section \"What is in the data, and what is not\".")
+    return 0
+
+
 def cmd_score(args) -> int:
     cases = load_cases(args.data)
     if args.baseline == "naive":
@@ -128,6 +208,17 @@ def build_parser() -> argparse.ArgumentParser:
     c.add_argument("--design")
     c.add_argument("--failures-only", action="store_true")
     c.set_defaults(func=cmd_cases)
+
+    t = sub.add_parser("submit", help="write a submission template with every case id")
+    t.add_argument("-o", "--output", help="file to write (default: stdout)")
+    t.add_argument("--fill", choices=["baseline", "true", "false"], default="baseline",
+                   help="starting values (default: baseline -- 0%% coverage, "
+                        "0 regressions)")
+    t.set_defaults(func=cmd_submit)
+
+    e = sub.add_parser("explain", help="describe one failure family")
+    e.add_argument("family")
+    e.set_defaults(func=cmd_explain)
 
     s = sub.add_parser("score", help="score a submission")
     s.add_argument("submission", nargs="?", help="JSON file of {case_id: bool}")
