@@ -32,6 +32,24 @@ even unrepaired and serve as regression controls.
 - **Format:** JSON Lines, one case per line
 - **Licence:** CC-BY-4.0 (data) / Apache-2.0 (code)
 
+## Load it
+
+```python
+from datasets import load_dataset
+
+ds = load_dataset("nickh007/pqc-mfb", split="train")
+ds.num_rows                                     # 322
+len(ds.unique("family"))                        # 39 failure families
+len(ds.unique("design"))                        # 10 unrepaired designs
+sum(ds["is_failure"])                           # 312
+
+ds[0]["case_id"]              # 'naive_hybrid_akm::algorithm_substitution'
+ds[0]["prior_art_analogue"]   # 'Dragonblood (weak-group forcing)'
+```
+
+To score your own implementation against all 322 cases, see
+[the scorer](https://github.com/nickharris808/pqc-mfb#scoring).
+
 ## Fields
 
 | Field | Type | Description |
@@ -117,17 +135,17 @@ Eleven free tools for teams moving authenticated key exchange to post-quantum. T
 
 | Tool | What it does | Where |
 |---|---|---|
-| [pqc-sizes](https://github.com/nickharris808/pqc-sizes) | Sizes, fragment counts, and the two-sided reassembly window | PyPI |
-| [pqc-sizes-js](https://github.com/nickharris808/pqc-sizes-js) | The same arithmetic for Node and the browser | npm |
+| [pqc-sizes](https://github.com/nickharris808/pqc-sizes) | Sizes, fragment counts, and the two-sided reassembly window | source |
+| [pqc-sizes-js](https://github.com/nickharris808/pqc-sizes-js) | The same arithmetic for Node and the browser | source |
 | [pqc-guard-action](https://github.com/nickharris808/pqc-guard-action) | Fail the build when the window is empty | GitHub Action |
 | [pqc-dos-embedded](https://github.com/nickharris808/pqc-dos-embedded) | 169 lines of C: the failure on a real 64 KB device | source |
 | [farkas-check](https://github.com/nickharris808/farkas-check) | Re-verify the bound on-device, no SMT solver | source |
-| [pqc-migration-mcp](https://github.com/nickharris808/pqc-migration-mcp) | Six MCP tools for AI agents | PyPI |
-| [pqc-mfb](https://github.com/nickharris808/pqc-mfb) | 322 cases · 39 failure families · scorer | PyPI |
-| **pqc-mfb (data)** ← you are here | The benchmark as a dataset | HF |
-| [pqc-formal-corpus](https://huggingface.co/datasets/nickh007/pqc-formal-corpus) | 122 named formal results, 6 provers | HF |
 | [pqc-bounds-lean](https://github.com/nickharris808/pqc-bounds-lean) | The same bound in Lean 4 — 0 `sorry`, 0 imports | source |
 | [pqc-dos-gate-rtl](https://github.com/nickharris808/pqc-dos-gate-rtl) | The gate in synthesizable RTL, 5 Yosys proofs | source |
+| [pqc-migration-mcp](https://github.com/nickharris808/pqc-migration-mcp) | Six MCP tools for AI agents | source |
+| [pqc-mfb](https://github.com/nickharris808/pqc-mfb) | 322 cases · 39 failure families · scorer | source |
+| **pqc-mfb (data)** ← you are here | The benchmark as a dataset | HF |
+| [pqc-formal-corpus](https://huggingface.co/datasets/nickh007/pqc-formal-corpus) | 122 named formal results, 6 provers | HF |
 | [pqc-explorer](https://huggingface.co/spaces/nickh007/pqc-explorer) | Try it in your browser, no install | HF Space |
 
 **New here?** The [end-to-end tutorial](https://github.com/nickharris808/pqc-sizes/blob/main/TUTORIAL.md) walks one realistic migration through all of them in about ten minutes: sizes -> window -> CI gate -> benchmark.

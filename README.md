@@ -1,10 +1,29 @@
+---
+license: cc-by-4.0
+task_categories:
+  - text-classification
+  - tabular-classification
+tags:
+  - security
+  - post-quantum
+  - cryptography
+  - benchmark
+  - protocol-verification
+pretty_name: "PQC-MFB: Post-Quantum Migration Failure Benchmark"
+size_categories:
+  - n<1K
+configs:
+  - config_name: default
+    data_files: src/pqc_mfb/data/pqc_mfb.jsonl
+---
+
 # PQC-MFB — Post-Quantum Migration Failure Benchmark
 
 [![license](https://img.shields.io/badge/code-Apache--2.0-blue.svg)](LICENSE)
 [![data](https://img.shields.io/badge/data-CC--BY--4.0-blue.svg)](DATASET_CARD.md)
 [![cases](https://img.shields.io/badge/cases-322-brightgreen.svg)](src/pqc_mfb/data/pqc_mfb.jsonl)
 [![families](https://img.shields.io/badge/failure%20families-39-brightgreen.svg)](#the-39-families)
-[![tests](https://img.shields.io/badge/tests-117%20passing-brightgreen.svg)](tests/)
+[![ci](https://github.com/nickharris808/pqc-mfb/actions/workflows/ci.yml/badge.svg)](https://github.com/nickharris808/pqc-mfb/actions/workflows/ci.yml)
 
 **Will your post-quantum migration break? Here are 322 ways it has already broken.**
 
@@ -314,17 +333,17 @@ Eleven free tools for teams moving authenticated key exchange to post-quantum. T
 
 | Tool | What it does | Where |
 |---|---|---|
-| [pqc-sizes](https://github.com/nickharris808/pqc-sizes) | Sizes, fragment counts, and the two-sided reassembly window | PyPI |
-| [pqc-sizes-js](https://github.com/nickharris808/pqc-sizes-js) | The same arithmetic for Node and the browser | npm |
+| [pqc-sizes](https://github.com/nickharris808/pqc-sizes) | Sizes, fragment counts, and the two-sided reassembly window | source |
+| [pqc-sizes-js](https://github.com/nickharris808/pqc-sizes-js) | The same arithmetic for Node and the browser | source |
 | [pqc-guard-action](https://github.com/nickharris808/pqc-guard-action) | Fail the build when the window is empty | GitHub Action |
 | [pqc-dos-embedded](https://github.com/nickharris808/pqc-dos-embedded) | 169 lines of C: the failure on a real 64 KB device | source |
 | [farkas-check](https://github.com/nickharris808/farkas-check) | Re-verify the bound on-device, no SMT solver | source |
-| [pqc-migration-mcp](https://github.com/nickharris808/pqc-migration-mcp) | Six MCP tools for AI agents | PyPI |
-| **pqc-mfb** ← you are here | 322 cases · 39 failure families · scorer | PyPI |
-| [pqc-mfb (data)](https://huggingface.co/datasets/nickh007/pqc-mfb) | The benchmark as a dataset | HF |
-| [pqc-formal-corpus](https://huggingface.co/datasets/nickh007/pqc-formal-corpus) | 122 named formal results, 6 provers | HF |
 | [pqc-bounds-lean](https://github.com/nickharris808/pqc-bounds-lean) | The same bound in Lean 4 — 0 `sorry`, 0 imports | source |
 | [pqc-dos-gate-rtl](https://github.com/nickharris808/pqc-dos-gate-rtl) | The gate in synthesizable RTL, 5 Yosys proofs | source |
+| [pqc-migration-mcp](https://github.com/nickharris808/pqc-migration-mcp) | Six MCP tools for AI agents | source |
+| **pqc-mfb** ← you are here | 322 cases · 39 failure families · scorer | source |
+| [pqc-mfb (data)](https://huggingface.co/datasets/nickh007/pqc-mfb) | The benchmark as a dataset | HF |
+| [pqc-formal-corpus](https://huggingface.co/datasets/nickh007/pqc-formal-corpus) | 122 named formal results, 6 provers | HF |
 | [pqc-explorer](https://huggingface.co/spaces/nickh007/pqc-explorer) | Try it in your browser, no install | HF Space |
 
 **New here?** The [end-to-end tutorial](https://github.com/nickharris808/pqc-sizes/blob/main/TUTORIAL.md) walks one realistic migration through all of them in about ten minutes: sizes -> window -> CI gate -> benchmark.

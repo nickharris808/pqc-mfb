@@ -26,7 +26,10 @@ from .score import (
     to_dataframe,
 )
 
-__version__ = "0.2.0"
+# 0.2.0 until 2026-07-30, disagreeing with pyproject.toml's 0.1.0. Nothing has
+# been released at either version (zero release tags, nothing on PyPI); the
+# packaged version wins. Guarded by tools/check_release_metadata.py.
+__version__ = "0.1.0"
 __all__ = [
     "Case",
     "Family",
